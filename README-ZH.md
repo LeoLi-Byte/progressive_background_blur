@@ -24,12 +24,13 @@ Language: 中文 | [English](README.md)
 - 仅支持 **Impeller** 渲染后端（近期 Flutter 在 iOS / Android / macOS 上默认启用），运行时通过
   [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html)
   探测能力。
+- **不支持 Web**：Web 上组件不产生模糊，按下述降级策略原样呈现 `child`。
 
 > **降级策略**
 >
 > 以下情况不做模糊，原样呈现 `child`：
 >
-> - 运行在 Skia 后端
+> - 运行在 Skia 后端或 Web（`isShaderFilterSupported` 为 `false`）
 > - 着色器加载完成前的首帧
 > - `sigmaStart` 与 `sigmaEnd` 均为 0
 

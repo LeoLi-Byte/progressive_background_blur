@@ -1,3 +1,8 @@
+## 0.0.2
+
+* Declared the supported platforms (Android, iOS, Linux, macOS, Windows) in `pubspec.yaml` via the top-level `platforms:` field.
+* Excluded web from the declared platforms, so pub.dev no longer shows a web platform tag. Web builds are unaffected — the widget still renders `child` unchanged there through the `isShaderFilterSupported` graceful-degradation path.
+
 ## 0.0.1
 
 * Added the `ProgressiveBlur` widget, matching Figma **Effects → Background blur → Progressive (Start / End)**: blur strength interpolates from `sigmaStart` to `sigmaEnd` along the line from `begin` to `end`, defaulting to top-to-bottom.

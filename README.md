@@ -25,12 +25,14 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 - **Impeller only.** Runtime support is detected through
   [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html);
   Impeller is enabled by default on iOS / Android / macOS in recent Flutter versions.
+- **Web is not supported.** On web, `child` is rendered unchanged (no blur), following the
+  graceful-degradation behavior below.
 
 > **Graceful degradation**
 >
 > No blur is applied and `child` is rendered unchanged in any of these cases:
 >
-> - Running on the Skia backend.
+> - Running on the Skia backend or on the web (`isShaderFilterSupported` is `false`).
 > - The shader hasn't finished loading on the first frame.
 > - Both `sigmaStart` and `sigmaEnd` are 0.
 

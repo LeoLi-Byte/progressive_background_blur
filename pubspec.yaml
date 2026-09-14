@@ -25,6 +25,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+
 flutter:
   # 片段着色器（Figma Effects -> Background blur -> Progressive）
   shaders:
