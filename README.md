@@ -65,33 +65,54 @@ Future<void> main() async {
 
 ### Basic usage
 
-The example below creates a 120-pixel-high region at the top fading from crisp to blurred,
-matching Figma Start: 0 / End: 20:
+The snippet below mirrors `example/lib/main.dart`: a scrolling list of colorful cards as the scene
+behind, with a blur strip pinned to the top — crisp at its bottom edge and increasingly blurred
+toward the top (`begin` at the bottom with sigma 0, `end` at the top with the largest sigma).
+A 6% translucent white tint and a title are painted on top of the blur:
 
 ```dart
 Stack(
-  fit: StackFit.expand,
   children: <Widget>[
-    // The scene behind: images, a scrolling list, etc.
+    // The scene behind: a scrolling list of colorful cards.
     ListView.builder(
+      itemCount: 40,
       itemBuilder: (BuildContext context, int index) {
-        return ListTile(title: Text('Item $index'));
+        final Color color = HSVColor.fromAHSV(1, (index * 23) % 360, 0.7, 0.9).toColor();
+        return Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+          height: 88,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text('Background item ${index + 1}'),
+        );
       },
     ),
 
-    // The progressive blur layer.
+    // The progressive blur strip at the top (its height comes from child's content).
     Positioned(
-      left: 0,
       top: 0,
+      left: 0,
       right: 0,
-      height: 120,
       child: ProgressiveBlur(
+        // Crisp at the bottom, blurriest at the top: sigma goes 0 → 4 along begin → end.
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
         sigmaStart: 0,
-        sigmaEnd: 20,
+        sigmaEnd: 4,
         // child is painted above the blur layer, usually holding a translucent
         // overlay, text, etc. For blur only, just pass SizedBox.expand().
-        child: ColoredBox(
-          color: Colors.white.withValues(alpha: 0.1),
+        child: Container(
+          alignment: Alignment.bottomLeft,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            // Mimics the common translucent tint from Figma; the blur itself
+            // comes from ProgressiveBlur.
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          child: const SafeArea(
+            bottom: false,
+            child: Text('Progressive Blur'),
+          ),
         ),
       ),
     ),
@@ -99,14 +120,36 @@ Stack(
 )
 ```
 
+> The full runnable demo lives in `example/lib/main.dart`: its bottom panel offers direction
+> presets (bottom → top / top → bottom / left → right / top-left → bottom-right) and Start / End
+> sigma sliders, so you can switch the gradient direction and tune both blur strengths live.
+
 ### Custom gradient direction
 
 `begin` / `end` define the alignment positions of the start and end points within the widget's own
 bounds. The blur strength only transitions from `sigmaStart` to `sigmaEnd` along the line between
-the two points:
+the two points. The example app ships four direction presets you can reuse directly:
 
 ```dart
-// Left-to-right gradient.
+// Bottom → top (the example app's default).
+ProgressiveBlur(
+  begin: Alignment.bottomCenter,
+  end: Alignment.topCenter,
+  sigmaStart: 0,
+  sigmaEnd: 4,
+  child: const SizedBox.expand(),
+)
+
+// Top → bottom (the widget's own default; begin / end can be omitted).
+ProgressiveBlur(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  sigmaStart: 0,
+  sigmaEnd: 16,
+  child: const SizedBox.expand(),
+)
+
+// Left → right.
 ProgressiveBlur(
   begin: Alignment.centerLeft,
   end: Alignment.centerRight,
@@ -115,7 +158,7 @@ ProgressiveBlur(
   child: const SizedBox.expand(),
 )
 
-// Diagonal gradient.
+// Top-left → bottom-right (diagonal gradient).
 ProgressiveBlur(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -123,8 +166,12 @@ ProgressiveBlur(
   sigmaEnd: 24,
   child: const SizedBox.expand(),
 )
+```
 
-// Use AlignmentDirectional to mirror the gradient automatically in RTL text direction.
+You can also use `AlignmentDirectional` to mirror the gradient automatically in RTL text
+direction:
+
+```dart
 ProgressiveBlur(
   begin: AlignmentDirectional.topStart,
   end: AlignmentDirectional.bottomEnd,

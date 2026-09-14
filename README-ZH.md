@@ -62,32 +62,52 @@ Future<void> main() async {
 
 ### 基础用法
 
-下例在顶部高度 120 的区域实现“由清晰到模糊”，对应 Figma Start: 0 / End: 20：
+下面的示例与 `example/lib/main.dart` 一致：背后是彩色卡片组成的滚动列表，顶部悬浮一条渐变
+模糊层——下沿清晰、越靠近顶部越模糊（`begin` 在下方、sigma 为 0，`end` 在顶部、sigma 最大），
+模糊层之上再叠加 6% 半透明白色与标题文字：
 
 ```dart
 Stack(
-  fit: StackFit.expand,
   children: <Widget>[
-    // 背后的场景内容：图片、滚动列表等
+    // 背后的场景内容：彩色卡片滚动列表
     ListView.builder(
+      itemCount: 40,
       itemBuilder: (BuildContext context, int index) {
-        return ListTile(title: Text('Item $index'));
+        final Color color = HSVColor.fromAHSV(1, (index * 23) % 360, 0.7, 0.9).toColor();
+        return Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+          height: 88,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text('背景内容 ${index + 1}'),
+        );
       },
     ),
 
-    // 渐变模糊层
+    // 顶部渐变模糊层（高度由 child 内容撑开）
     Positioned(
-      left: 0,
       top: 0,
+      left: 0,
       right: 0,
-      height: 120,
       child: ProgressiveBlur(
+        // 下沿清晰、顶部最模糊：模糊量沿 begin → end 由 0 过渡到 4
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
         sigmaStart: 0,
-        sigmaEnd: 20,
+        sigmaEnd: 4,
         // child 绘制在模糊层之上，通常放置半透明遮罩、文字等；
         // 只需要纯模糊时传 SizedBox.expand() 即可。
-        child: ColoredBox(
-          color: Colors.white.withValues(alpha: 0.1),
+        child: Container(
+          alignment: Alignment.bottomLeft,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            // 模拟 Figma 中常见的半透明叠色，模糊本身由 ProgressiveBlur 完成
+            color: Colors.white.withValues(alpha: 0.06),
+          ),
+          child: const SafeArea(
+            bottom: false,
+            child: Text('Progressive Blur'),
+          ),
         ),
       ),
     ),
@@ -95,13 +115,35 @@ Stack(
 )
 ```
 
+> 完整可运行示例见 `example/lib/main.dart`：示例 App 底部提供了方向选择
+>（下 → 上 / 上 → 下 / 左 → 右 / 左上 → 右下）与 Start、End 两个 sigma 滑块，
+> 可以实时切换渐变方向并调节两端的模糊强度。
+
 ### 自定义渐变方向
 
 `begin` / `end` 表示渐变起点、终点在组件区域内的对齐位置，模糊量只在两点连线上
-由 `sigmaStart` 过渡到 `sigmaEnd`：
+由 `sigmaStart` 过渡到 `sigmaEnd`。示例 App 内置了 4 个方向预设，可直接照用：
 
 ```dart
-// 自左向右渐变
+// 下 → 上（示例 App 的默认方向）
+ProgressiveBlur(
+  begin: Alignment.bottomCenter,
+  end: Alignment.topCenter,
+  sigmaStart: 0,
+  sigmaEnd: 4,
+  child: const SizedBox.expand(),
+)
+
+// 上 → 下（组件默认方向，begin / end 省略时即此方向）
+ProgressiveBlur(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  sigmaStart: 0,
+  sigmaEnd: 16,
+  child: const SizedBox.expand(),
+)
+
+// 左 → 右
 ProgressiveBlur(
   begin: Alignment.centerLeft,
   end: Alignment.centerRight,
@@ -110,7 +152,7 @@ ProgressiveBlur(
   child: const SizedBox.expand(),
 )
 
-// 沿对角线渐变
+// 左上 → 右下（沿对角线渐变）
 ProgressiveBlur(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
@@ -118,8 +160,11 @@ ProgressiveBlur(
   sigmaEnd: 24,
   child: const SizedBox.expand(),
 )
+```
 
-// 使用 AlignmentDirectional，随文字方向（RTL）自动镜像
+也可以使用 `AlignmentDirectional`，渐变方向会随文字方向（RTL）自动镜像：
+
+```dart
 ProgressiveBlur(
   begin: AlignmentDirectional.topStart,
   end: AlignmentDirectional.bottomEnd,
