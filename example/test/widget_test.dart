@@ -1,27 +1,25 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// ProgressiveBlur 示例的冒烟测试：验证页面结构以及四个参数的控制项存在。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:progressive_background_blur/progressive_background_blur.dart';
 
 import 'package:progressive_background_blur_example/main.dart';
 
 void main() {
-  testWidgets('Verify Platform version', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Demo shows blur panel and parameter controls', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProgressiveBlurDemoApp());
+    await tester.pumpAndSettle();
 
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is Text && widget.data!.startsWith('Running on:'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byType(ProgressiveBlur), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.text('End'), findsOneWidget);
+    expect(find.text('上 → 下'), findsOneWidget);
+
+    // 拖动 End 滑条应能正常更新参数并重建。
+    final Offset sliderCenter = tester.getCenter(find.byType(Slider).last);
+    await tester.tapAt(Offset(sliderCenter.dx + 100, sliderCenter.dy));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProgressiveBlur), findsOneWidget);
   });
 }
