@@ -1,6 +1,4 @@
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-
-import 'progressive_background_blur_method_channel.dart';
+part of 'progressive_background_blur.dart';
 
 abstract class ProgressiveBackgroundBlurPlatform extends PlatformInterface {
   /// Constructs a ProgressiveBackgroundBlurPlatform.

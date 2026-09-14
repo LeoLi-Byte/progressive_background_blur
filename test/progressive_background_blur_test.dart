@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:progressive_background_blur/progressive_background_blur.dart';
-import 'package:progressive_background_blur/progressive_background_blur_method_channel.dart';
-import 'package:progressive_background_blur/progressive_background_blur_platform_interface.dart';
+import 'package:progressive_background_blur/interface/progressive_background_blur.dart';
 
 class MockProgressiveBackgroundBlurPlatform
     with MockPlatformInterfaceMixin

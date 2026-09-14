@@ -1,7 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-
-import 'progressive_background_blur_platform_interface.dart';
+part of 'progressive_background_blur.dart';
 
 /// An implementation of [ProgressiveBackgroundBlurPlatform] that uses method channels.
 class MethodChannelProgressiveBackgroundBlur extends ProgressiveBackgroundBlurPlatform {

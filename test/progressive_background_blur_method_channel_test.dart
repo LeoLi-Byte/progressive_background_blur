@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:progressive_background_blur/progressive_background_blur_method_channel.dart';
+import 'package:progressive_background_blur/interface/progressive_background_blur.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
