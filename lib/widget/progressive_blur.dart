@@ -25,10 +25,14 @@ import 'package:flutter/rendering.dart';
 /// 采样点，因此 sigma 超过约 42 后实际模糊量不再继续增大。
 ///
 /// 仅支持 Impeller：通过 `ui.ImageFilter.shader` 以两遍（水平 / 垂直）可分离高斯卷积
-/// 实现，由内部的 [BackdropFilterLayer] 合成。以下情况不做模糊、原样呈现 [child]：
+/// 实现，由内部的 [BackdropFilterLayer] 合成。以下情况不做模糊、原样呈现 [child]
+/// （[child] 为空时退化为零尺寸占位，与无孩子的 [RenderProxyBox] 行为一致）：
 /// - 运行在 Skia 后端（`ui.ImageFilter.isShaderFilterSupported` 为 false）；
 /// - 着色器尚未加载完成的首帧（建议在 `runApp()` 前调用 [precache] 预编译）；
 /// - [sigmaStart] 与 [sigmaEnd] 均为 0。
+///
+/// [child] 可为空：为空时组件仍会对自身区域（尺寸由父级约束决定）内的背景应用模糊，
+/// 只是不绘制前景内容。
 ///
 /// 使用限制：
 /// - 组件的全局位置仅在 paint 阶段读取一次。若祖先通过纯合成层位移移动本组件
@@ -46,7 +50,7 @@ class ProgressiveBlur extends StatefulWidget {
     this.end = .bottomCenter,
     this.sigmaStart = 0,
     required this.sigmaEnd,
-    required this.child,
+    this.child,
   });
 
   /// 渐变起点在本组件区域内的对齐位置，默认为 [Alignment.topCenter]。
@@ -67,8 +71,11 @@ class ProgressiveBlur extends StatefulWidget {
   /// 与 Figma 限制一致，超出会被钳制。
   final double sigmaEnd;
 
-  /// 模糊层之上的子组件（通常是半透明渐变填充等）。
-  final Widget child;
+  /// 模糊层之上的子组件（通常是半透明渐变填充等），可为空。
+  ///
+  /// 为空时仍会对组件自身区域内的背景应用模糊（区域大小由父级约束决定），
+  /// 仅不绘制前景内容。
+  final Widget? child;
 
   /// sigma 的取值上限（含），与 Figma Background blur 的 0～100 限制一致。
   static const double maxSigma = 100;
@@ -107,16 +114,18 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
   @override
   Widget build(BuildContext context) {
     final ui.FragmentProgram? program = ProgressiveBlur._program;
+    final Widget? child = widget.child;
 
     /// Skia 后端不支持着色器背景滤镜，不做模糊处理。
     /// 着色器尚未加载完成的首帧不做模糊，加载完成后下一帧切换。
-    if (!ui.ImageFilter.isShaderFilterSupported || program == null) return widget.child;
+    /// build 不能返回 null，无孩子时用零尺寸占位，行为与无孩子的 RenderProxyBox 一致。
+    if (!ui.ImageFilter.isShaderFilterSupported || program == null) return child ?? const SizedBox.shrink();
 
     /// 与 Figma 一致，sigma 取值钳制在 0～100（含端点）；两端都为 0 时 shader 仅做
     /// identity 采样，但仍有 saveLayer 开销，直接返回子组件。
     final double sigmaStart = widget.sigmaStart.clamp(0.0, ProgressiveBlur.maxSigma);
     final double sigmaEnd = widget.sigmaEnd.clamp(0.0, ProgressiveBlur.maxSigma);
-    if (sigmaStart == 0 && sigmaEnd == 0) return widget.child;
+    if (sigmaStart == 0 && sigmaEnd == 0) return child ?? const SizedBox.shrink();
 
     /// AlignmentDirectional 按当前文字方向解析。
     final TextDirection textDirection = Directionality.maybeOf(context) ?? .ltr;
@@ -128,7 +137,7 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
       sigmaStart: sigmaStart,
       sigmaEnd: sigmaEnd,
       viewSize: MediaQuery.sizeOf(context),
-      child: widget.child,
+      child: child,
     );
   }
 }
@@ -279,11 +288,8 @@ class _RenderShaderBackdropBlur extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (child == null) {
-      layer = null;
-      return;
-    }
-
+    /// child 为空时仍推送背景滤镜层：模糊作用于本组件自身区域（尺寸由父级约束决定），
+    /// 与框架的 RenderBackdropFilter 行为保持一致；super.paint 在无孩子时本身就是空操作。
     final Offset globalTopLeft = localToGlobal(Offset.zero);
     final double left = (globalTopLeft.dx / _viewSize.width).clamp(0, 1);
     final double top = (globalTopLeft.dy / _viewSize.height).clamp(0, 1);
