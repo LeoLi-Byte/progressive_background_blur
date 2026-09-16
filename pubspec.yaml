@@ -1,6 +1,6 @@
 name: progressive_background_blur
 description: "Progressive background blur widget to create smooth layered frosted glass effect for Flutter."
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/LeoLi-Byte
 repository: https://github.com/LeoLi-Byte/progressive_background_blur
 issue_tracker: https://github.com/LeoLi-Byte/progressive_background_blur/issues
