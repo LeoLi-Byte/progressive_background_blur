@@ -34,6 +34,11 @@ import 'package:flutter/rendering.dart';
 /// [child] 可为空：为空时组件仍会对自身区域（尺寸由父级约束决定）内的背景应用模糊，
 /// 只是不绘制前景内容。
 ///
+/// 组件外层始终按自身矩形裁剪（[ClipRect]）：fragment-shader 背景滤镜的输出覆盖域在
+/// 引擎侧只能按整屏背景快照保守计算，不裁剪时模糊会溢出到组件区域之外，并导致路由
+/// 滑动/淡出关闭时整屏模糊残留到节点销毁才消失。裁剪后模糊严格限定在组件矩形内，
+/// 并随所属页面一起平移、淡出与销毁。
+///
 /// 使用限制：
 /// - 组件的全局位置仅在 paint 阶段读取一次。若祖先通过纯合成层位移移动本组件
 ///   （[AnimatedSlide]、[FractionalTranslation]，或命中图层缓存的 `Transform.translate`），
@@ -114,7 +119,7 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
   @override
   Widget build(BuildContext context) {
     final ui.FragmentProgram? program = ProgressiveBlur._program;
-    final Widget? child = widget.child;
+    Widget? child = widget.child;
 
     /// Skia 后端不支持着色器背景滤镜，不做模糊处理。
     /// 着色器尚未加载完成的首帧不做模糊，加载完成后下一帧切换。
@@ -130,7 +135,7 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
     /// AlignmentDirectional 按当前文字方向解析。
     final TextDirection textDirection = Directionality.maybeOf(context) ?? .ltr;
 
-    return _ShaderBackdropBlur(
+    child = _ShaderBackdropBlur(
       program: program,
       begin: widget.begin.resolve(textDirection),
       end: widget.end.resolve(textDirection),
@@ -139,6 +144,8 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
       viewSize: MediaQuery.sizeOf(context),
       child: child,
     );
+
+    return ClipRect(child: child);
   }
 }
 
