@@ -25,12 +25,14 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 - **Impeller only.** Runtime support is detected through
   [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html);
   Impeller is enabled by default on iOS / Android / macOS in recent Flutter versions.
-- **Web is not supported.** On web, `child` is rendered unchanged (no blur), following the
-  graceful-degradation behavior below.
+- **Web is not supported.** On web, no blur is applied and `child` is rendered unchanged (when
+  `child` is null, the widget becomes a zero-sized placeholder), following the graceful-degradation
+  behavior below.
 
 > **Graceful degradation**
 >
-> No blur is applied and `child` is rendered unchanged in any of these cases:
+> No blur is applied in any of these cases: `child` is rendered unchanged, or — when `child` is
+> null — the widget takes up zero space, behaving like a childless `RenderProxyBox`:
 >
 > - Running on the Skia backend or on the web (`isShaderFilterSupported` is `false`).
 > - The shader hasn't finished loading on the first frame.
@@ -40,7 +42,7 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 
 ```yaml
 dependencies:
-  progressive_background_blur: ^0.0.1
+  progressive_background_blur: ^0.0.3
 ```
 
 ```dart
@@ -102,7 +104,9 @@ Stack(
         sigmaStart: 0,
         sigmaEnd: 4,
         // child is painted above the blur layer, usually holding a translucent
-        // overlay, text, etc. For blur only, just pass SizedBox.expand().
+        // overlay, text, etc. It is optional; here the Positioned derives its
+        // height from the child, so a sizing child is still required.
+        // See "Blur without a child" below for the childless case.
         child: Container(
           alignment: Alignment.bottomLeft,
           padding: const EdgeInsets.all(12),
@@ -183,6 +187,21 @@ ProgressiveBlur(
 )
 ```
 
+### Blur without a child
+
+`child` is optional. When omitted, only the backdrop blur is painted — no foreground content — but
+the widget must still get a size from its parent: under loose constraints a childless widget is
+zero-sized, so use `Positioned.fill`, `SizedBox`, or another parent that supplies tight constraints:
+
+```dart
+Positioned.fill(
+  child: ProgressiveBlur(
+    sigmaStart: 0,
+    sigmaEnd: 20,
+  ),
+)
+```
+
 ## Parameters
 
 | Name         | Type                | Default                  | Description                                                                                                                                                                                              |
@@ -191,14 +210,14 @@ ProgressiveBlur(
 | `end`        | `AlignmentGeometry` | `Alignment.bottomCenter` | Alignment of the gradient end point within the widget's bounds.                                                                                                                                          |
 | `sigmaStart` | `double`            | `0`                      | Gaussian blur sigma at the start point, corresponding to Figma **Start**. Passed to the shader as-is in backdrop-texture pixels (physical pixels). Clamped to 0–100 (inclusive), matching Figma's range. |
 | `sigmaEnd`   | `double`            | required                 | Gaussian blur sigma at the end point, corresponding to Figma **End**. Same rules as `sigmaStart`.                                                                                                        |
-| `child`      | `Widget`            | required                 | The child painted above the blur layer.                                                                                                                                                                  |
+| `child`      | `Widget?`           | `null`                   | The optional child painted above the blur layer. When null, the blur is still applied to the widget's own region (its size comes from the parent's constraints); only the foreground content is absent.  |
 
 Static members:
 
 | Name                             | Description                                                                                      |
 |----------------------------------|--------------------------------------------------------------------------------------------------|
 | `ProgressiveBlur.precache()`     | Precompiles and caches the shader program; recommended to `await` before `runApp()` in `main()`. |
-| `ProgressiveBlur.shaderAssetKey` | The shader asset key (`lib/shaders/progressive_blur.frag`).                             |
+| `ProgressiveBlur.shaderAssetKey` | The shader asset key (`lib/shaders/progressive_blur.frag`).                                      |
 | `ProgressiveBlur.maxSigma`       | The upper bound for sigma, `100` (inclusive), matching Figma's range.                            |
 
 ## How it works
@@ -208,6 +227,11 @@ to `BackdropFilter`'s full-screen backdrop snapshot through
 [`ui.ImageFilter.shader`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/ImageFilter.shader.html).
 Per fragment, sigma is interpolated between `sigmaStart` and `sigmaEnd` by the fragment's position
 along the `begin` → `end` line.
+
+Because the engine conservatively treats the shader-based filter's output region as the entire
+backdrop snapshot, the widget wraps itself in a `ClipRect`: the blur is strictly confined to the
+widget's own bounds and moves, fades, and disposes together with its page (for example during a
+route slide/fade-out transition), instead of spilling past its rect or lingering on screen.
 
 ## Notes
 

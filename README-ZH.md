@@ -24,11 +24,11 @@ Language: 中文 | [English](README.md)
 - 仅支持 **Impeller** 渲染后端（近期 Flutter 在 iOS / Android / macOS 上默认启用），运行时通过
   [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html)
   探测能力。
-- **不支持 Web**：Web 上组件不产生模糊，按下述降级策略原样呈现 `child`。
+- **不支持 Web**：Web 上组件不产生模糊，按下述降级策略原样呈现 `child`（`child` 为空时退化为零尺寸占位）。
 
 > **降级策略**
 >
-> 以下情况不做模糊，原样呈现 `child`：
+> 以下情况不做模糊：有 `child` 时原样呈现；`child` 为空时组件不占空间，与无孩子的 `RenderProxyBox` 行为一致：
 >
 > - 运行在 Skia 后端或 Web（`isShaderFilterSupported` 为 `false`）
 > - 着色器加载完成前的首帧
@@ -38,7 +38,7 @@ Language: 中文 | [English](README.md)
 
 ```yaml
 dependencies:
-  progressive_background_blur: ^0.0.1
+  progressive_background_blur: ^0.0.3
 ```
 
 ```dart
@@ -96,8 +96,9 @@ Stack(
         end: Alignment.topCenter,
         sigmaStart: 0,
         sigmaEnd: 4,
-        // child 绘制在模糊层之上，通常放置半透明遮罩、文字等；
-        // 只需要纯模糊时传 SizedBox.expand() 即可。
+        // child 绘制在模糊层之上，通常放置半透明遮罩、文字等，可为空。
+        // 本例 Positioned 的高度依赖 child 撑开，因此仍需传入尺寸型 child；
+        // 不提供 child 的纯模糊用法见下文“不提供 child 的纯模糊用法”。
         child: Container(
           alignment: Alignment.bottomLeft,
           padding: const EdgeInsets.all(12),
@@ -175,6 +176,21 @@ ProgressiveBlur(
 )
 ```
 
+### 不提供 child 的纯模糊用法
+
+`child` 可空：省略时只绘制背景模糊、不绘制前景内容，但组件仍需从父级获得尺寸——
+宽松约束下无 child 的组件尺寸为 0，因此请用 `Positioned.fill`、`SizedBox` 等能提供紧约束的
+父级撑开区域：
+
+```dart
+Positioned.fill(
+  child: ProgressiveBlur(
+    sigmaStart: 0,
+    sigmaEnd: 20,
+  ),
+)
+```
+
 ## 参数说明
 
 | 参数           | 类型                  | 默认值                      | 说明                                                                                |
@@ -183,15 +199,15 @@ ProgressiveBlur(
 | `end`        | `AlignmentGeometry` | `Alignment.bottomCenter` | 渐变终点在组件区域内的对齐位置                                                                   |
 | `sigmaStart` | `double`            | `0`                      | 起点的高斯模糊 sigma，对应 Figma **Start**；原样写入着色器，单位与背景快照纹理一致（物理像素），取值范围 0～100（含端点），超出会被钳制 |
 | `sigmaEnd`   | `double`            | 必填                       | 终点的高斯模糊 sigma，对应 Figma **End**；规则同 `sigmaStart`                                   |
-| `child`      | `Widget`            | 必填                       | 绘制在模糊层之上的子组件                                                                      |
+| `child`      | `Widget?`           | `null`                   | 绘制在模糊层之上的子组件，可空；为空时仍会对组件自身区域应用模糊（区域大小由父级约束决定），仅不绘制前景内容                            |
 
 静态成员：
 
-| 成员                               | 说明                                                      |
-|----------------------------------|---------------------------------------------------------|
-| `ProgressiveBlur.precache()`     | 预编译并缓存着色器程序，建议在 `main()` 中 `runApp` 之前 `await`          |
+| 成员                               | 说明                                             |
+|----------------------------------|------------------------------------------------|
+| `ProgressiveBlur.precache()`     | 预编译并缓存着色器程序，建议在 `main()` 中 `runApp` 之前 `await` |
 | `ProgressiveBlur.shaderAssetKey` | 着色器资源 Key（`lib/shaders/progressive_blur.frag`） |
-| `ProgressiveBlur.maxSigma`       | sigma 取值上限常量，值为 `100`（含），与 Figma 限制一致                   |
+| `ProgressiveBlur.maxSigma`       | sigma 取值上限常量，值为 `100`（含），与 Figma 限制一致          |
 
 ## 实现原理
 
@@ -199,6 +215,10 @@ ProgressiveBlur(
 [`ui.ImageFilter.shader`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/ImageFilter.shader.html)
 组合后作用于 `BackdropFilter` 的整屏背景快照；每个片元的 sigma 按其在 `begin` → `end`
 连线上的位置在 `sigmaStart` 与 `sigmaEnd` 间线性插值。
+
+由于引擎对着色器滤镜的输出覆盖域只能按整屏背景快照保守计算，组件外层始终包一层
+`ClipRect`：模糊被严格限定在组件自身矩形内，并随所属页面一起平移、淡出与销毁
+（例如路由滑动 / 淡出关闭时），不会溢出到组件区域之外或残留在屏幕上。
 
 ## 注意事项
 

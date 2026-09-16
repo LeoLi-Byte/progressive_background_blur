@@ -1,3 +1,9 @@
+## 0.0.3
+
+* Made `ProgressiveBlur.child` optional (`Widget?`, defaults to `null`). When omitted, the backdrop blur is still applied to the widget's own region (its size is determined by the parent's constraints); only the foreground content is absent, matching `BackdropFilter`'s behavior.
+* On the no-blur degradation paths (Skia backend, web, shader still loading, both sigmas 0), a null `child` now renders as a zero-sized placeholder instead of being skipped.
+* Fixed the blur bleeding outside the widget's own bounds: the shader-based backdrop filter's output region is conservatively computed by the engine as the full-screen backdrop snapshot, so the blur could spill past the widget and linger as a full-screen smear during route slide/fade-out transitions until the node was destroyed. The widget is now wrapped in a `ClipRect`, so the blur is strictly confined to its own rect and moves, fades, and disposes with its page.
+
 ## 0.0.2
 
 * Declared the supported platforms (Android, iOS, Linux, macOS, Windows) in `pubspec.yaml` via the top-level `platforms:` field.
