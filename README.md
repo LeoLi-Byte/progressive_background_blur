@@ -23,8 +23,16 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 ```
 
 - **Impeller only.** Runtime support is detected through
-  [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html);
-  Impeller is enabled by default on iOS / Android / macOS in recent Flutter versions.
+  [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html).
+  Per-platform status (see the [Impeller docs](https://docs.flutter.dev/perf/impeller)):
+  - **iOS**: Impeller is the only supported renderer, with no Skia fallback — always available;
+  - **Android**: Impeller is enabled by default on API 29+. Devices on lower API levels or without
+    Vulkan support fall back to the legacy OpenGL renderer, where `isShaderFilterSupported` is
+    `false` and the widget renders `child` unchanged, following the graceful-degradation behavior
+    below;
+  - **macOS / Linux / Windows**: Impeller is enabled by default since Flutter 3.47. On Flutter
+    3.41–3.46 these platforms still default to Skia, where the degradation behavior applies;
+  - On any platform you can debug the degradation path with `flutter run --no-enable-impeller`.
 - **Web is not supported.** On web, no blur is applied and `child` is rendered unchanged (when
   `child` is null, the widget becomes a zero-sized placeholder), following the graceful-degradation
   behavior below.
@@ -42,7 +50,7 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 
 ```yaml
 dependencies:
-  progressive_background_blur: ^0.0.3
+  progressive_background_blur: ^0.0.4
 ```
 
 ```dart
@@ -228,10 +236,10 @@ to `BackdropFilter`'s full-screen backdrop snapshot through
 Per fragment, sigma is interpolated between `sigmaStart` and `sigmaEnd` by the fragment's position
 along the `begin` → `end` line.
 
-Because the engine conservatively treats the shader-based filter's output region as the entire
-backdrop snapshot, the widget wraps itself in a `ClipRect`: the blur is strictly confined to the
-widget's own bounds and moves, fades, and disposes together with its page (for example during a
-route slide/fade-out transition), instead of spilling past its rect or lingering on screen.
+The blur is applied by the widget's own render object, which resolves the gradient's on-screen
+position on every paint, writes it to the shader uniforms, and then pushes a
+`BackdropFilterLayer` covering the widget's own region — so the blur moves, fades, and disposes
+together with its page (for example during a route transition).
 
 ## Notes
 

@@ -1,3 +1,9 @@
+## 0.0.4
+
+* Removed the redundant outer `ClipRect` wrapper introduced in 0.0.3: the blur node is now returned directly, so one compositing clip layer is saved. No change to the public API or the documented usage limitations.
+* Internal cleanup of `ProgressiveBlur`'s build path (fewer intermediate assignments) and doc comments updated to match the current implementation.
+* Documented per-platform Impeller availability in the READMEs, following the official Impeller docs: mandatory on iOS; default on Android API 29+ (older devices fall back to OpenGL and degrade gracefully); default since Flutter 3.47 on macOS / Linux / Windows (Flutter 3.41–3.46 still defaults to Skia there and degrades gracefully).
+
 ## 0.0.3
 
 * Made `ProgressiveBlur.child` optional (`Widget?`, defaults to `null`). When omitted, the backdrop blur is still applied to the widget's own region (its size is determined by the parent's constraints); only the foreground content is absent, matching `BackdropFilter`'s behavior.
@@ -6,6 +12,7 @@
 
 ## 0.0.2
 
+* Raised the minimum Flutter version from 3.3.0 to 3.41.0 (the Dart SDK constraint was relaxed from ^3.11.5 to ^3.11.0), as required by the shader-based `ProgressiveBlur` implementation introduced in 0.0.1.
 * Declared the supported platforms (Android, iOS, Linux, macOS, Windows) in `pubspec.yaml` via the top-level `platforms:` field.
 * Excluded web from the declared platforms, so pub.dev no longer shows a web platform tag. Web builds are unaffected — the widget still renders `child` unchanged there through the `isShaderFilterSupported` graceful-degradation path.
 

@@ -21,9 +21,15 @@ Language: 中文 | [English](README.md)
   flutter: ">=3.41.0"
 ```
 
-- 仅支持 **Impeller** 渲染后端（近期 Flutter 在 iOS / Android / macOS 上默认启用），运行时通过
+- 仅支持 **Impeller** 渲染后端，运行时通过
   [`ui.ImageFilter.isShaderFilterSupported`](https://api.flutter.dev/flutter/dart-ui/ImageFilter/isShaderFilterSupported.html)
-  探测能力。
+  探测能力。各平台支持情况（详见 [Impeller 官方文档](https://docs.flutter.dev/perf/impeller)）：
+  - **iOS**：Impeller 是唯一支持的渲染引擎，无 Skia 回退，始终可用；
+  - **Android**：API 29+ 默认启用 Impeller；更低系统版本或不支持 Vulkan 的设备会回退到
+    OpenGL 渲染器，此时 `isShaderFilterSupported` 为 `false`，按下述降级策略原样呈现 `child`；
+  - **macOS / Linux / Windows**：自 Flutter 3.47 起默认启用 Impeller；3.41～3.46 版本
+    这些平台仍默认 Skia，同样按降级策略处理；
+  - 各平台调试时可用 `flutter run --no-enable-impeller` 关闭 Impeller 验证降级表现。
 - **不支持 Web**：Web 上组件不产生模糊，按下述降级策略原样呈现 `child`（`child` 为空时退化为零尺寸占位）。
 
 > **降级策略**
@@ -38,7 +44,7 @@ Language: 中文 | [English](README.md)
 
 ```yaml
 dependencies:
-  progressive_background_blur: ^0.0.3
+  progressive_background_blur: ^0.0.4
 ```
 
 ```dart
@@ -216,9 +222,9 @@ Positioned.fill(
 组合后作用于 `BackdropFilter` 的整屏背景快照；每个片元的 sigma 按其在 `begin` → `end`
 连线上的位置在 `sigmaStart` 与 `sigmaEnd` 间线性插值。
 
-由于引擎对着色器滤镜的输出覆盖域只能按整屏背景快照保守计算，组件外层始终包一层
-`ClipRect`：模糊被严格限定在组件自身矩形内，并随所属页面一起平移、淡出与销毁
-（例如路由滑动 / 淡出关闭时），不会溢出到组件区域之外或残留在屏幕上。
+模糊由组件自身的 RenderObject 应用：每次绘制时先解析渐变在屏幕上的位置并写入着色器
+uniform，再推送覆盖组件自身区域的 `BackdropFilterLayer`，模糊随所属页面一起平移、
+淡出与销毁（例如路由过渡动画期间）。
 
 ## 注意事项
 
