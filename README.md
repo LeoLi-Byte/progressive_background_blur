@@ -57,7 +57,7 @@ the End sigma slider live.
 
 ```yaml
 dependencies:
-  progressive_background_blur: ^0.0.4
+  progressive_background_blur: ^1.0.0
 ```
 
 ```dart

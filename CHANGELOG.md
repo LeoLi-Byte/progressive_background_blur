@@ -1,3 +1,9 @@
+## 1.0.0
+
+* First stable release. The public API is unchanged since 0.0.4 and is now considered stable: the `ProgressiveBlur` widget (`begin` / `end`, `sigmaStart` / `sigmaEnd`, optional `child`) and the static members `ProgressiveBlur.precache()`, `ProgressiveBlur.shaderAssetKey`, and `ProgressiveBlur.maxSigma`.
+* Rebuilt the example app (`example/lib/main.dart`) as a bottom blur toolbar over a scrolling scene, with an **End** sigma slider (0–`ProgressiveBlur.maxSigma`) for tuning the blur strength live.
+* Refreshed both READMEs to match the new example; the demo video was dropped in favor of a GIF.
+
 ## 0.0.4
 
 * Removed the redundant outer `ClipRect` wrapper introduced in 0.0.3: the blur node is now returned directly, so one compositing clip layer is saved. No change to the public API or the documented usage limitations.
