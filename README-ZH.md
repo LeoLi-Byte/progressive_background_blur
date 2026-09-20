@@ -17,7 +17,7 @@ Language: 中文 | [English](README.md)
 ![示例应用演示](screenshots/example.gif)
 
 示例应用（`example/lib/main.dart`）在滚动场景上叠加底部模糊工具栏，可实时调节 End 模糊
-强度滑杆。▶ [观看高清视频](screenshots/example_video.mp4)
+强度滑杆。
 
 ## 准备工作
 
