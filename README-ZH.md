@@ -12,6 +12,13 @@ Language: 中文 | [English](README.md)
 与 `BackdropFilter` 用法一致：组件模糊的是其**背后**的场景内容（例如导航栏背后正在滚动的列表），
 模糊量沿 `begin` 到 `end` 的连线由 `sigmaStart` 线性过渡到 `sigmaEnd`，默认方向自上而下。
 
+## 演示
+
+[![示例应用演示](videos/example_poster.png)](videos/example_video.mp4)
+
+▶ 点击封面播放演示视频：示例应用（`example/lib/main.dart`）在滚动场景上叠加底部模糊工具栏，
+可实时调节 End 模糊强度滑杆。
+
 ## 准备工作
 
 ### 版本限制
@@ -69,85 +76,94 @@ Future<void> main() async {
 
 ### 基础用法
 
-下面的示例与 `example/lib/main.dart` 一致：背后是彩色卡片组成的滚动列表，顶部悬浮一条渐变
-模糊层——下沿清晰、越靠近顶部越模糊（`begin` 在下方、sigma 为 0，`end` 在顶部、sigma 最大），
-模糊层之上再叠加 6% 半透明白色与标题文字：
+下面的示例与 `example/lib/main.dart` 一致：背后是彩色卡片组成的滚动列表，底部悬浮一个
+工具栏，其背景为渐变模糊——上沿清晰、越靠近底部越模糊（`begin` 在上方、sigma 为 0，
+`end` 在底部、sigma 最大），模糊层之上再叠加白色渐变与一排图标按钮：
 
 ```dart
-Stack(
-  children: <Widget>[
-    // 背后的场景内容：彩色卡片滚动列表
-    ListView.builder(
-      itemCount: 40,
-      itemBuilder: (BuildContext context, int index) {
-        final Color color = HSVColor.fromAHSV(1, (index * 23) % 360, 0.7, 0.9).toColor();
-        return Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-          height: 88,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('背景内容 ${index + 1}'),
-        );
-      },
-    ),
+Scaffold(
+  // 背后的场景内容：彩色卡片滚动列表
+  body: ListView.builder(
+    itemCount: 40,
+    itemBuilder: (BuildContext context, int index) {
+      final Color color = HSVColor.fromAHSV(1, (index * 31) % 360, 0.6, 0.85).toColor();
+      return Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+        height: 88,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text('背景内容 ${index + 1}'),
+      );
+    },
+  ),
 
-    // 顶部渐变模糊层（高度由 child 内容撑开）
-    Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: ProgressiveBlur(
-        // 下沿清晰、顶部最模糊：模糊量沿 begin → end 由 0 过渡到 4
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        sigmaStart: 0,
-        sigmaEnd: 4,
-        // child 绘制在模糊层之上，通常放置半透明遮罩、文字等，可为空。
-        // 本例 Positioned 的高度依赖 child 撑开，因此仍需传入尺寸型 child；
-        // 不提供 child 的纯模糊用法见下文“不提供 child 的纯模糊用法”。
-        child: Container(
-          alignment: Alignment.bottomLeft,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            // 模拟 Figma 中常见的半透明叠色，模糊本身由 ProgressiveBlur 完成
-            color: Colors.white.withValues(alpha: 0.06),
-          ),
-          child: const SafeArea(
-            bottom: false,
-            child: Text('Progressive Blur'),
-          ),
+  // 悬浮工具栏：以 ProgressiveBlur 作为背景
+  bottomNavigationBar: ProgressiveBlur(
+    // 上沿清晰、底部最模糊：模糊量沿 begin → end 由 0 过渡到 16
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    sigmaStart: 0,
+    sigmaEnd: 16,
+    // child 绘制在模糊层之上，通常放置半透明遮罩、按钮等，可为空；
+    // 本例中它同时撑开工具栏的高度。
+    // 不提供 child 的纯模糊用法见下文“不提供 child 的纯模糊用法”。
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        // 模拟 Figma 中常见的渐变叠色，模糊本身由 ProgressiveBlur 完成
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: 0.3),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            IconButton(icon: const Icon(Icons.home), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.favorite), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.person), onPressed: () {}),
+          ],
         ),
       ),
     ),
-  ],
+  ),
+
+  // 让列表可以滚动到模糊工具栏的下方
+  extendBody: true,
 )
 ```
 
-> 完整可运行示例见 `example/lib/main.dart`：示例 App 底部提供了方向选择
->（下 → 上 / 上 → 下 / 左 → 右 / 左上 → 右下）与 Start、End 两个 sigma 滑块，
-> 可以实时切换渐变方向并调节两端的模糊强度。
+> 完整可运行示例见 `example/lib/main.dart`：示例 App 顶部卡片提供了 **End** sigma 滑块
+>（0～`ProgressiveBlur.maxSigma`），可以实时调节模糊强度。
 
 ### 自定义渐变方向
 
 `begin` / `end` 表示渐变起点、终点在组件区域内的对齐位置，模糊量只在两点连线上
-由 `sigmaStart` 过渡到 `sigmaEnd`。示例 App 内置了 4 个方向预设，可直接照用：
+由 `sigmaStart` 过渡到 `sigmaEnd`。四种常见配置：
 
 ```dart
-// 下 → 上（示例 App 的默认方向）
-ProgressiveBlur(
-  begin: Alignment.bottomCenter,
-  end: Alignment.topCenter,
-  sigmaStart: 0,
-  sigmaEnd: 4,
-  child: const SizedBox.expand(),
-)
-
 // 上 → 下（组件默认方向，begin / end 省略时即此方向）
+// 也是示例 App 底部工具栏使用的方向
 ProgressiveBlur(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
   sigmaStart: 0,
   sigmaEnd: 16,
+  child: const SizedBox.expand(),
+)
+
+// 下 → 上
+ProgressiveBlur(
+  begin: Alignment.bottomCenter,
+  end: Alignment.topCenter,
+  sigmaStart: 0,
+  sigmaEnd: 4,
   child: const SizedBox.expand(),
 )
 

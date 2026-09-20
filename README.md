@@ -1,7 +1,7 @@
 # progressive_background_blur
 
 [![pub package](https://img.shields.io/pub/v/progressive_background_blur)](https://pub.dev/packages/progressive_background_blur)
-[![GitHub license](https://img.shields.io/github/license/LeoLi-Byte/progressive_background_blur?label=协议&style=flat-square)](https://github.com/LeoLi-Byte/progressive_background_blur/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/LeoLi-Byte/progressive_background_blur)](https://github.com/LeoLi-Byte/progressive_background_blur/blob/main/LICENSE)
 
 Language: [中文](README-ZH.md) | English
 
@@ -13,7 +13,14 @@ It works just like `BackdropFilter`: the widget blurs the scene content **behind
 a scrolling list behind a navigation bar). The blur strength interpolates linearly from
 `sigmaStart` to `sigmaEnd` along the line from `begin` to `end`, going top-to-bottom by default.
 
-## Preparing for use
+## Demo
+
+[![Example app demo](videos/example_poster.png)](videos/example_video.mp4)
+
+▶ Click the poster to play the demo video: the example app (`example/lib/main.dart`) with a bottom
+blur toolbar over a scrolling scene, tuning the End sigma slider live.
+
+## Getting started
 
 ### Version constraints
 
@@ -78,88 +85,97 @@ Future<void> main() async {
 ### Basic usage
 
 The snippet below mirrors `example/lib/main.dart`: a scrolling list of colorful cards as the scene
-behind, with a blur strip pinned to the top — crisp at its bottom edge and increasingly blurred
-toward the top (`begin` at the bottom with sigma 0, `end` at the top with the largest sigma).
-A 6% translucent white tint and a title are painted on top of the blur:
+behind, with a floating toolbar pinned to the bottom whose background is a progressive blur — crisp
+at its top edge and increasingly blurred toward the bottom (`begin` at the top with sigma 0, `end`
+at the bottom with the largest sigma). A white gradient tint and a row of icon buttons are painted
+on top of the blur:
 
 ```dart
-Stack(
-  children: <Widget>[
-    // The scene behind: a scrolling list of colorful cards.
-    ListView.builder(
-      itemCount: 40,
-      itemBuilder: (BuildContext context, int index) {
-        final Color color = HSVColor.fromAHSV(1, (index * 23) % 360, 0.7, 0.9).toColor();
-        return Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-          height: 88,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('Background item ${index + 1}'),
-        );
-      },
-    ),
+Scaffold(
+  // The scene behind: a scrolling list of colorful cards.
+  body: ListView.builder(
+    itemCount: 40,
+    itemBuilder: (BuildContext context, int index) {
+      final Color color = HSVColor.fromAHSV(1, (index * 31) % 360, 0.6, 0.85).toColor();
+      return Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+        height: 88,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text('Background item ${index + 1}'),
+      );
+    },
+  ),
 
-    // The progressive blur strip at the top (its height comes from child's content).
-    Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: ProgressiveBlur(
-        // Crisp at the bottom, blurriest at the top: sigma goes 0 → 4 along begin → end.
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        sigmaStart: 0,
-        sigmaEnd: 4,
-        // child is painted above the blur layer, usually holding a translucent
-        // overlay, text, etc. It is optional; here the Positioned derives its
-        // height from the child, so a sizing child is still required.
-        // See "Blur without a child" below for the childless case.
-        child: Container(
-          alignment: Alignment.bottomLeft,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            // Mimics the common translucent tint from Figma; the blur itself
-            // comes from ProgressiveBlur.
-            color: Colors.white.withValues(alpha: 0.06),
-          ),
-          child: const SafeArea(
-            bottom: false,
-            child: Text('Progressive Blur'),
-          ),
+  // The floating toolbar: ProgressiveBlur as its background.
+  bottomNavigationBar: ProgressiveBlur(
+    // Crisp at the top edge, blurriest at the bottom: sigma goes 0 → 16 along begin → end.
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    sigmaStart: 0,
+    sigmaEnd: 16,
+    // child is painted above the blur layer, usually holding a translucent
+    // overlay, buttons, etc. It is optional; here it also gives the toolbar
+    // its height. See "Blur without a child" below for the childless case.
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        // Mimics the common gradient tint from Figma; the blur itself
+        // comes from ProgressiveBlur.
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: 0.3),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            IconButton(icon: const Icon(Icons.home), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.favorite), onPressed: () {}),
+            IconButton(icon: const Icon(Icons.person), onPressed: () {}),
+          ],
         ),
       ),
     ),
-  ],
+  ),
+
+  // Lets the list scroll underneath the blur toolbar.
+  extendBody: true,
 )
 ```
 
-> The full runnable demo lives in `example/lib/main.dart`: its bottom panel offers direction
-> presets (bottom → top / top → bottom / left → right / top-left → bottom-right) and Start / End
-> sigma sliders, so you can switch the gradient direction and tune both blur strengths live.
+> The full runnable demo lives in `example/lib/main.dart`: its top card hosts an **End** sigma
+> slider (0–`ProgressiveBlur.maxSigma`), so you can tune the blur strength live.
 
 ### Custom gradient direction
 
 `begin` / `end` define the alignment positions of the start and end points within the widget's own
 bounds. The blur strength only transitions from `sigmaStart` to `sigmaEnd` along the line between
-the two points. The example app ships four direction presets you can reuse directly:
+the two points. Four common setups:
 
 ```dart
-// Bottom → top (the example app's default).
-ProgressiveBlur(
-  begin: Alignment.bottomCenter,
-  end: Alignment.topCenter,
-  sigmaStart: 0,
-  sigmaEnd: 4,
-  child: const SizedBox.expand(),
-)
-
 // Top → bottom (the widget's own default; begin / end can be omitted).
+// This is also the direction of the example app's bottom toolbar.
 ProgressiveBlur(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
   sigmaStart: 0,
   sigmaEnd: 16,
+  child: const SizedBox.expand(),
+)
+
+// Bottom → top.
+ProgressiveBlur(
+  begin: Alignment.bottomCenter,
+  end: Alignment.topCenter,
+  sigmaStart: 0,
+  sigmaEnd: 4,
   child: const SizedBox.expand(),
 )
 
