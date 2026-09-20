@@ -8,7 +8,7 @@
 PRODUCT_NAME = progressive_background_blur_example
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = org.leoli.plugin.backgroundblur.progressive.progressiveBackgroundBlurExample
+PRODUCT_BUNDLE_IDENTIFIER = org.leoli.plugin.progressiveBackgroundBlurExample
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 org.leoli.plugin.backgroundblur.progressive. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 org.leoli.plugin.progressive_background_blur. All rights reserved.

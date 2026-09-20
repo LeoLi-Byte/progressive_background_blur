@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "org.leoli.plugin.backgroundblur.progressive" "\0"
+            VALUE "CompanyName", "org.leoli.plugin.progressive_background_blur" "\0"
             VALUE "FileDescription", "progressive_background_blur_example" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "progressive_background_blur_example" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 org.leoli.plugin.backgroundblur.progressive. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 org.leoli.plugin.progressive_background_blur. All rights reserved." "\0"
             VALUE "OriginalFilename", "progressive_background_blur_example.exe" "\0"
             VALUE "ProductName", "progressive_background_blur_example" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
