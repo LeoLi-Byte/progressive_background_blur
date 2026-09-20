@@ -15,10 +15,10 @@ a scrolling list behind a navigation bar). The blur strength interpolates linear
 
 ## Demo
 
-[![Example app demo](videos/example_poster.png)](videos/example_video.mp4)
+![Example app demo](screenshots/example.gif)
 
-▶ Click the poster to play the demo video: the example app (`example/lib/main.dart`) with a bottom
-blur toolbar over a scrolling scene, tuning the End sigma slider live.
+The example app (`example/lib/main.dart`) with a bottom blur toolbar over a scrolling scene, tuning
+the End sigma slider live. ▶ [Full-quality video](screenshots/example_video.mp4)
 
 ## Getting started
 

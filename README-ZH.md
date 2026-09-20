@@ -14,10 +14,10 @@ Language: 中文 | [English](README.md)
 
 ## 演示
 
-[![示例应用演示](videos/example_poster.png)](videos/example_video.mp4)
+![示例应用演示](screenshots/example.gif)
 
-▶ 点击封面播放演示视频：示例应用（`example/lib/main.dart`）在滚动场景上叠加底部模糊工具栏，
-可实时调节 End 模糊强度滑杆。
+示例应用（`example/lib/main.dart`）在滚动场景上叠加底部模糊工具栏，可实时调节 End 模糊
+强度滑杆。▶ [观看高清视频](screenshots/example_video.mp4)
 
 ## 准备工作
 
