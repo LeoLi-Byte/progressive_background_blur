@@ -7,134 +7,102 @@ Future<void> main() async {
   /// 在首帧前预编译着色器，避免第一次进入页面时模糊“闪”一下。
   await ProgressiveBlur.precache();
 
-  runApp(const ProgressiveBlurDemoApp());
+  runApp(const MyApp());
 }
 
-/// 渐变方向预设，对应 [ProgressiveBlur.begin] / [ProgressiveBlur.end] 两个参数。
-enum GradientDirection {
-  bottomToTop('下 → 上', Alignment.bottomCenter, Alignment.topCenter),
-  topToBottom('上 → 下', Alignment.topCenter, Alignment.bottomCenter),
-  leftToRight('左 → 右', Alignment.centerLeft, Alignment.centerRight),
-  topLeftToBottomRight('左上 → 右下', Alignment.topLeft, Alignment.bottomRight);
-
-  const GradientDirection(this.label, this.begin, this.end);
-
-  final String label;
-  final Alignment begin;
-  final Alignment end;
-}
-
-class ProgressiveBlurDemoApp extends StatelessWidget {
-  const ProgressiveBlurDemoApp({super.key});
+/// 新的示例入口：底部悬浮渐变模糊工具栏场景。
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Progressive Blur Demo',
       theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
-      home: const DemoPage(),
+      home: const BottomBlurPage(),
     );
   }
 }
 
-class DemoPage extends StatefulWidget {
-  const DemoPage({super.key});
+/// 演示 [ProgressiveBlur] 叠加在列表底部、作为悬浮工具栏背景的用法。
+class BottomBlurPage extends StatefulWidget {
+  const BottomBlurPage({super.key});
 
   @override
-  State<DemoPage> createState() => _DemoPageState();
+  State<BottomBlurPage> createState() => _BottomBlurPageState();
 }
 
-class _DemoPageState extends State<DemoPage> {
-  GradientDirection _direction = GradientDirection.bottomToTop;
-  double _sigmaStart = 0;
-  double _sigmaEnd = 4;
+class _BottomBlurPageState extends State<BottomBlurPage> {
+  double _sigmaEnd = 16;
 
   @override
   Widget build(BuildContext context) {
-    Widget child = ListView.builder(
-      itemCount: 40,
-      itemBuilder: (BuildContext context, int index) {
-        final Color color = HSVColor.fromAHSV(1, (index * 23) % 360, 0.7, 0.9).toColor();
-        return Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
-          height: 88,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            '背景内容 ${index + 1}',
-            style: const TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        );
-      },
-    );
-
-    child = Stack(
-      children: <Widget>[
-        child,
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: ProgressiveBlur(
-            begin: _direction.begin,
-            end: _direction.end,
-            sigmaStart: _sigmaStart,
-            sigmaEnd: _sigmaEnd,
-            child: Container(
-              alignment: Alignment.bottomLeft,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                /// 模拟 Figma 中常见的半透明叠色，模糊本身由 ProgressiveBlur 完成。
-                color: Colors.white.withValues(alpha: 0.06),
-              ),
-              child: const SafeArea(
-                bottom: false,
+    return Scaffold(
+      appBar: AppBar(title: const Text('底部渐变模糊')),
+      body: Stack(
+        children: <Widget>[
+          ListView.builder(
+            itemCount: 40,
+            itemBuilder: (BuildContext context, int index) {
+              final Color color = HSVColor.fromAHSV(1, (index * 31) % 360, 0.6, 0.85).toColor();
+              return Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+                height: 88,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
-                  'Progressive Blur\nFigma Effects → Background blur → Progressive',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  '列表项 ${index + 1}',
+                  style: const TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            left: 8,
+            top: 8,
+            right: 8,
+            child: Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: _SigmaSlider(
+                  label: 'End',
+                  value: _sigmaEnd,
+                  onChanged: (double value) => setState(() => _sigmaEnd = value),
                 ),
               ),
             ),
           ),
-        ),
-      ],
-    );
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Wrap(
-                spacing: 8,
-                children: GradientDirection.values.map((GradientDirection direction) {
-                  return ChoiceChip(
-                    label: Text(direction.label),
-                    selected: _direction == direction,
-                    onSelected: (_) {
-                      setState(() => _direction = direction);
-                    },
-                  );
-                }).toList(),
-              ),
-              _SigmaSlider(
-                label: 'Start',
-                value: _sigmaStart,
-                onChanged: (double value) => setState(() => _sigmaStart = value),
-              ),
-              _SigmaSlider(
-                label: 'End',
-                value: _sigmaEnd,
-                onChanged: (double value) => setState(() => _sigmaEnd = value),
-              ),
-            ],
+        ],
+      ),
+      bottomNavigationBar: ProgressiveBlur(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        sigmaStart: 0,
+        sigmaEnd: _sigmaEnd,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: .3)],
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                IconButton(icon: const Icon(Icons.home), onPressed: () {}),
+                IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+                IconButton(icon: const Icon(Icons.favorite), onPressed: () {}),
+                IconButton(icon: const Icon(Icons.person), onPressed: () {}),
+              ],
+            ),
           ),
         ),
       ),
+      extendBody: true,
     );
   }
 }
