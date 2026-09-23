@@ -1,3 +1,7 @@
+## 1.0.1
+
+* Added a `.pubignore` file to keep `CLAUDE.md` and the `.claude/` directory out of the pub.dev package archive. No changes to the public API or runtime behavior.
+
 ## 1.0.0
 
 * First stable release. The public API is unchanged since 0.0.4 and is now considered stable: the `ProgressiveBlur` widget (`begin` / `end`, `sigmaStart` / `sigmaEnd`, optional `child`) and the static members `ProgressiveBlur.precache()`, `ProgressiveBlur.shaderAssetKey`, and `ProgressiveBlur.maxSigma`.
